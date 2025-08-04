@@ -243,10 +243,10 @@ class OpenInsiderScraper:
                       'Qty', 'shares_held', 'Owned', 'Value']
         
         df = pd.DataFrame(data, columns=field_names)
-        output_path = Path(__file__).parent / "data" / "insider_trades.csv"
-        print("📁 Guardando CSV en:", output_path.resolve())
+        output_path = Path(self.config.output_dir) / self.config.output_file
+        output_path.parent.mkdir(parents=True, exist_ok=True)  # ← Esta línea es la clave
+        df.to_csv(output_path, index=False)
 
-        
         if self.config.output_format.lower() == 'csv':
             df.to_csv(output_path, index=False)
         elif self.config.output_format.lower() == 'parquet':
