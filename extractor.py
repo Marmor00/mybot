@@ -114,9 +114,10 @@ class InsiderBotFinnhub:
                 print(f"ERROR: Columnas requeridas no encontradas. Columnas disponibles: {list(df.columns)}")
                 return []
             
-            # Filtrar solo transacciones de compra (P - Purchase)
+            # Filtrar solo transacciones de compra - método directo
             if 'transaction_type' in df.columns:
-                df = df[df['transaction_type'].str.contains('P - Purchase', na=False)]
+                print(f"DEBUG: Tipos de transacción únicos: {df['transaction_type'].value_counts().head()}")
+                df = df[df['transaction_type'] == 'P - Purchase']
                 print(f"Filtrando solo compras: {len(df)} transacciones")
             
             alerts = []
