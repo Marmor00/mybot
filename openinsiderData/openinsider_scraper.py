@@ -243,7 +243,7 @@ class OpenInsiderScraper:
                       'Qty', 'shares_held', 'Owned', 'Value']
         
         df = pd.DataFrame(data, columns=field_names)
-        output_path = Path(self.config.output_dir) / self.config.output_file
+        output_path = Path(__file__).parent / "data" / "insider_trades.csv"
         print("📁 Guardando CSV en:", output_path.resolve())
 
         
