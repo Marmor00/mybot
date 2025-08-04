@@ -109,6 +109,16 @@ class InsiderBotFinnhub:
             df = pd.read_csv(csv_path)
             print(f"Encontradas {len(df)} transacciones")
             
+            # Validación de columnas críticas
+            if 'Qty' not in df.columns or 'last_price' not in df.columns:
+                print(f"ERROR: Columnas requeridas no encontradas. Columnas disponibles: {list(df.columns)}")
+                return []
+            
+            # Filtrar solo transacciones de compra (P - Purchase)
+            if 'transaction_type' in df.columns:
+                df = df[df['transaction_type'].str.contains('P - Purchase', na=False)]
+                print(f"Filtrando solo compras: {len(df)} transacciones")
+            
             alerts = []
             for _, row in df.iterrows():
                 alert = self.create_enhanced_alert(row)
@@ -137,8 +147,9 @@ class InsiderBotFinnhub:
         try:
             return float(clean) if clean else 0.0
         except ValueError as e:
-            if len(clean) > 0:  # Solo para casos no vacíos
-                print(f"DEBUG: No se pudo convertir '{value}' -> '{clean}': {e}")
+            # Debug desactivado para evitar spam de logs
+            # if len(clean) > 0 and any(c.isdigit() for c in clean):
+            #     print(f"DEBUG: No se pudo convertir '{value}' -> '{clean}': {e}")
             return 0.0
     
     def create_enhanced_alert(self, row):
