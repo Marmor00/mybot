@@ -1,0 +1,29 @@
+output:
+  directory: data
+  filename: insider_trades
+  format: csv
+
+scraping:
+  start_year: 2025
+  start_month: 8
+  max_workers: 5          # Reducido para ser respetuoso
+  retry_attempts: 3
+  timeout: 30
+
+filters:
+  min_transaction_value: 100000    # $1M mínimo
+  transaction_types:
+    - P                             # Solo compras
+  exclude_companies: []
+  min_shares_traded: 100
+
+logging:
+  level: INFO
+  file: scraper.log
+  rotate_logs: true
+  max_log_size: 10
+
+cache:
+  enabled: true
+  directory: .cache
+  max_age: 6                        # 6 horas cache

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insider Trading Bot - Cloud Edition</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <meta name="theme-color" content="#4299e1">
+    <link rel="manifest" href="/static/manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-bottom: 20px;
+        }
+        .app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        
+        /* Mobile-first responsive header */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .title h1 {
+            color: #2d3748;
+            font-size: clamp(20px, 5vw, 28px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .cloud-badge {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Control panel */
+        .control-panel {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .control-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            justify-content: center;
+        }
+        .btn.primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .btn.primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+        }
+        .btn.secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        .btn.secondary:hover {
+            background: #cbd5e0;
+        }
+        .btn:disabled {
+            background: #cbd5e0 !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* Status indicators */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-indicator.idle {
+            background: #f0f4f8;
+            color: #2d3748;
+        }
+        .status-indicator.running {
+            background: #fef5e7;
+            color: #dd6b20;
+            animation: pulse 2s infinite;
+        }
+        .status-indicator.completed {
+            background: #f0fff4;
+            color: #276749;
+        }
+        .status-indicator.error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        
+        /* Terminal */
+        .terminal {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        /* Stats grid - responsive */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .stat-card.danger { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .stat-card.success { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #2d3748; }
+        .stat-card.warning { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #2d3748; }
+        
+        .stat-value {
+            font-size: clamp(20px, 4vw, 24px);
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .stat-label {
+            font-size: 14px;
+        }
+        
+        /* Main content - responsive layout */
+        .content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .content {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        /* Alerts */
+        .alert-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .alert-card.critical { border-left: 5px solid #e53e3e; background: linear-gradient(90deg, #fed7d7 0%, #ffffff 10%); }
+        .alert-card.high { border-left: 5px solid #dd6b20; background: linear-gradient(90deg, #feebc8 0%, #ffffff 10%); }
+        .alert-card.medium { border-left: 5px solid #d69e2e; background: linear-gradient(90deg, #faf089 0%, #ffffff 10%); }
+        .alert-card.low { border-left: 5px solid #4299e1; background: linear-gradient(90deg, #bee3f8 0%, #ffffff 10%); }
+        
+        .ticker {
+            font-size: clamp(18px, 4vw, 24px);
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .company {
+            color: #718096;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .alert-details {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        @media (min-width: 480px) {
+            .alert-details {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #4a5568;
+        }
+        
+        .score-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4299e1;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .score-badge.critical { background: #e53e3e; }
+        .score-badge.high { background: #dd6b20; }
+        .score-badge.medium { background: #d69e2e; }
+        
+        .factors-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .factor-tag {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+        
+        /* Loading states */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #4299e1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .app { padding: 5px; }
+            .header, .panel { padding: 15px; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .control-buttons { flex-direction: column; }
+            .btn { min-width: auto; width: 100%; }
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .panel {
+                background: #2d3748;
+                color: #e2e8f0;
+            }
+            .alert-card {
+                background: #4a5568;
+                border-color: #718096;
+            }
+        }
+        
+        /* Offline indicator */
+        .offline-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #e53e3e;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            transform: translateY(-100%);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+        .offline-banner.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div id="offline-banner" class="offline-banner">
+        <i class="fas fa-wifi"></i> Sin conexión - Reconectando...
+    </div>
+    
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="title">
+                <h1>
+                    <i class="fas fa-robot"></i>
+                    Insider Trading Bot
+                </h1>
+                <div class="cloud-badge">
+                    <i class="fas fa-cloud"></i>
+                    CLOUD EDITION
+                </div>
+            </div>
+            
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <div class="control-buttons">
+                    <button id="runBtn" class="btn primary">
+                        <i class="fas fa-play"></i>
+                        Ejecutar Extractor
+                    </button>
+                    <button id="refreshBtn" class="btn secondary">
+                        <i class="fas fa-refresh"></i>
+                        Recargar
+                    </button>
+                    <button id="logsBtn" class="btn secondary">
+                        <i class="fas fa-terminal"></i>
+                        Ver Logs
+                    </button>
+                </div>
+                
+                <div class="status-bar">
+                    <div id="statusIndicator" class="status-indicator idle">
+                        <i class="fas fa-circle"></i>
+                        <span>Sistema Listo</span>
+                    </div>
+                    <div id="lastUpdate" style="font-size: 12px; color: #718096;">
+                        Nunca ejecutado
+                    </div>
+                </div>
+                
+                <div id="terminal" class="terminal" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card danger">
+                <i class="fas fa-exclamation-triangle" style="font-size: 20px; margin-bottom: 5px;"></i>
+                <div id="activeAlerts" class="stat-value">0</div>
+                <div class="stat-label">Alertas Activas</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-chart-line" style="font-size: 20px; margin-bottom: 5px;"></i>
+                <div id="avgScore" class="stat-value">0</div>
+                <div class="stat-label">Score Promedio</div>
+            </div>
+            <div class="stat-card success">
+                <i class="fas fa-dollar-sign" style="font-size: 20px; margin-bottom: 5px;"></i>
+                <div id="totalValue" class="stat-value">$0</div>
+                <div class="stat-label">Valor Total</div>
+            </div>
+            <div class="stat-card warning">
+                <i class="fas fa-fire" style="font-size: 20px; margin-bottom: 5px;"></i>
+                <div id="megaTrades" class="stat-value">0</div>
+                <div class="stat-label">Mega Trades</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Main Panel -->
+            <div class="panel">
+                <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-bell"></i>
+                    Alertas de Insider Trading
+                </h2>
+                <div id="alertsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Cargando alertas...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="panel">
+                <h3 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-server"></i>
+                    Sistema
+                </h3>
+                <div id="systemStatus" style="font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                        <span>Backend Flask</span>
+                        <span style="color: #48bb78; font-weight: bold;">✓ Activo</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                        <span>Finnhub API</span>
+                        <span style="color: #48bb78; font-weight: bold;">✓ Conectado</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                        <span>Auto-Updates</span>
+                        <span style="color: #48bb78; font-weight: bold;">✓ Habilitado</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                        <span>Cloud Deploy</span>
+                        <span style="color: #48bb78; font-weight: bold;">✓ Listo</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class InsiderBotClient {
+            constructor() {
+                this.isOnline = navigator.onLine;
+                this.setupEventListeners();
+                this.startPolling();
+                this.loadInitialData();
+            }
+
+            setupEventListeners() {
+                document.getElementById('runBtn').addEventListener('click', () => this.runExtractor());
+                document.getElementById('refreshBtn').addEventListener('click', () => this.loadAlerts());
+                document.getElementById('logsBtn').addEventListener('click', () => this.toggleTerminal());
+                
+                // Network status
+                window.addEventListener('online', () => this.setOnlineStatus(true));
+                window.addEventListener('offline', () => this.setOnlineStatus(false));
+            }
+
+            setOnlineStatus(online) {
+                this.isOnline = online;
+                const banner = document.getElementById('offline-banner');
+                banner.classList.toggle('show', !online);
+            }
+
+            async apiCall(endpoint, options = {}) {
+                if (!this.isOnline) {
+                    throw new Error('Sin conexión a internet');
+                }
+                
+                try {
+                    const response = await fetch(`/api${endpoint}`, {
+                        headers: { 'Content-Type': 'application/json' },
+                        ...options
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.error('API Error:', error);
+                    throw error;
+                }
+            }
+
+            async loadInitialData() {
+                await Promise.all([
+                    this.loadAlerts(),
+                    this.updateStatus()
+                ]);
+            }
+
+            async loadAlerts() {
+                try {
+                    const data = await this.apiCall('/alerts');
+                    this.displayAlerts(data.alerts || []);
+                    this.updateStats(data.stats || {});
+                    
+                    if (data.last_update) {
+                        document.getElementById('lastUpdate').textContent = 
+                            `Última actualización: ${new Date(data.last_update).toLocaleString()}`;
+                    }
+                } catch (error) {
+                    this.showError('Error cargando alertas: ' + error.message);
+                }
+            }
+
+            async runExtractor() {
+                try {
+                    const runBtn = document.getElementById('runBtn');
+                    runBtn.disabled = true;
+                    runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ejecutando...';
+                    
+                    await this.apiCall('/run', { method: 'POST' });
+                    this.showTerminal();
+                    
+                } catch (error) {
+                    this.showError('Error ejecutando extractor: ' + error.message);
+                } finally {
+                    setTimeout(() => {
+                        const runBtn = document.getElementById('runBtn');
+                        runBtn.disabled = false;
+                        runBtn.innerHTML = '<i class="fas fa-play"></i> Ejecutar Extractor';
+                    }, 2000);
+                }
+            }
+
+            async updateStatus() {
+                try {
+                    const status = await this.apiCall('/status');
+                    this.updateStatusIndicator(status);
+                    
+                    if (status.is_running && status.log_messages?.length > 0) {
+                        this.updateTerminal(status.log_messages);
+                    }
+                } catch (error) {
+                    console.error('Error updating status:', error);
+                }
+            }
+
+            updateStatusIndicator(status) {
+                const indicator = document.getElementById('statusIndicator');
+                const runBtn = document.getElementById('runBtn');
+                
+                indicator.className = `status-indicator ${status.status}`;
+                
+                const statusTexts = {
+                    idle: 'Sistema Listo',
+                    running: 'Ejecutando...',
+                    completed: 'Completado',
+                    error: 'Error',
+                    demo_completed: 'Demo Completado'
+                };
+                
+                indicator.innerHTML = `
+                    <i class="fas fa-circle"></i>
+                    <span>${statusTexts[status.status] || 'Desconocido'}</span>
+                `;
+                
+                runBtn.disabled = status.is_running;
+            }
+
+            displayAlerts(alerts) {
+                const container = document.getElementById('alertsContainer');
+                
+                if (alerts.length === 0) {
+                    container.innerHTML = `
+                        <div class="loading">
+                            <i class="fas fa-search" style="font-size: 48px; color: #cbd5e0; margin-bottom: 15px;"></i>
+                            <div>No hay alertas disponibles</div>
+                            <div style="font-size: 14px; margin-top: 10px;">
+                                Ejecuta el extractor para obtener datos
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = alerts.map(alert => `
+                    <div class="alert-card ${alert.level}">
+                        <div class="score-badge ${alert.level}">${alert.score}</div>
+                        
+                        <div class="ticker">${alert.ticker}</div>
+                        <div class="company">${alert.company}</div>
+                        
+                        <div class="alert-details">
+                            <div class="detail-item">
+                                <i class="fas fa-user"></i>
+                                <span>${alert.insider}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-dollar-sign"></i>
+                                <span>${this.formatCurrency(alert.totalValue)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>${alert.traded}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-chart-line"></i>
+                                <span>$${alert.currentPrice} (${alert.priceChangePercent >= 0 ? '+' : ''}${alert.priceChangePercent.toFixed(2)}%)</span>
+                            </div>
+                        </div>
+                        
+                        <div class="factors-list">
+                            ${alert.factors.map(factor => `<span class="factor-tag">${factor}</span>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateStats(stats) {
+                document.getElementById('activeAlerts').textContent = stats.critical + stats.high + stats.medium + stats.low || 0;
+                document.getElementById('avgScore').textContent = stats.avg_score || 0;
+                document.getElementById('totalValue').textContent = this.formatCurrency(stats.total_value || 0);
+                document.getElementById('megaTrades').textContent = stats.mega_trades || 0;
+            }
+
+            showTerminal() {
+                const terminal = document.getElementById('terminal');
+                terminal.style.display = 'block';
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+
+            toggleTerminal() {
+                const terminal = document.getElementById('terminal');
+                terminal.style.display = terminal.style.display === 'none' ? 'block' : 'none';
+            }
+
+            updateTerminal(messages) {
+                const terminal = document.getElementById('terminal');
+                terminal.textContent = messages.join('\n');
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+
+            formatCurrency(value) {
+                return new Intl.NumberFormat('es-MX', {
+                    style: 'currency',
+                    currency: 'USD',
+                    notation: 'compact'
+                }).format(value);
+            }
+
+            showError(message) {
+                console.error(message);
+                // Could add toast notifications here
+            }
+
+            startPolling() {
+                // Poll every 5 seconds when running, 30 seconds when idle
+                setInterval(() => {
+                    this.updateStatus();
+                }, 5000);
+                
+                // Refresh alerts every 2 minutes
+                setInterval(() => {
+                    this.loadAlerts();
+                }, 120000);
+            }
+        }
+
+        // Start the app
+        document.addEventListener('DOMContentLoaded', () => {
+            new InsiderBotClient();
+        });
+
+        // Service Worker for PWA (optional)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw.js').catch(console.error);
+        }
+    </script>
+</body>
+</html>

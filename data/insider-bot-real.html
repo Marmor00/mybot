@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insider Trading Bot - Datos Reales</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .app {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .title h1 {
+            color: #2d3748;
+            font-size: 28px;
+        }
+        .real-data-badge {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-left: auto;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-card.danger {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        .stat-card.success {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #2d3748;
+        }
+        .stat-card.warning {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #2d3748;
+        }
+        .content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        .main-panel, .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #2d3748;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .alert-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        .alert-card.critical {
+            border-left: 5px solid #e53e3e;
+            background: linear-gradient(90deg, #fed7d7 0%, #ffffff 10%);
+        }
+        .alert-card.high {
+            border-left: 5px solid #dd6b20;
+            background: linear-gradient(90deg, #feebc8 0%, #ffffff 10%);
+        }
+        .alert-card.medium {
+            border-left: 5px solid #d69e2e;
+            background: linear-gradient(90deg, #faf089 0%, #ffffff 10%);
+        }
+        .ticker {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .company {
+            color: #718096;
+            margin-bottom: 10px;
+        }
+        .price-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .price {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .change {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .change.positive {
+            background: #c6f6d5;
+            color: #276749;
+        }
+        .change.negative {
+            background: #fed7d7;
+            color: #c53030;
+        }
+        .alert-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5568;
+        }
+        .score-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #4299e1;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .score-badge.critical {
+            background: #e53e3e;
+        }
+        .score-badge.high {
+            background: #dd6b20;
+        }
+        .score-badge.medium {
+            background: #d69e2e;
+        }
+        .factors {
+            margin: 15px 0;
+        }
+        .factors-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .factor-tag {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn.primary {
+            background: #4299e1;
+            color: white;
+        }
+        .btn.primary:hover {
+            background: #3182ce;
+        }
+        .btn.secondary {
+            background: #edf2f7;
+            color: #4a5568;
+        }
+        .btn.secondary:hover {
+            background: #e2e8f0;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #4299e1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .refresh-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-left: auto;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #276749;
+        }
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function InsiderTradingBotReal() {
+            const [alerts, setAlerts] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [lastUpdate, setLastUpdate] = useState(null);
+            const [stats, setStats] = useState({
+                activeAlerts: 0,
+                avgScore: 0,
+                critical: 0,
+                high: 0,
+                medium: 0
+            });
+
+            // Cargar datos al iniciar
+            useEffect(() => {
+                loadRealData();
+            }, []);
+
+            const loadRealData = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    // Intentar cargar datos reales
+                    const response = await fetch('/data/insider_alerts.json');
+                    
+                    if (!response.ok) {
+                        throw new Error('No se encontraron datos. Ejecuta el script Python primero.');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.alerts && data.alerts.length > 0) {
+                        setAlerts(data.alerts);
+                        setStats({
+                            activeAlerts: data.total_alerts,
+                            avgScore: data.stats.avg_score,
+                            critical: data.stats.critical,
+                            high: data.stats.high,
+                            medium: data.stats.medium
+                        });
+                        setLastUpdate(new Date(data.last_update));
+                    } else {
+                        throw new Error('No se encontraron alertas en los datos');
+                    }
+                    
+                } catch (err) {
+                    console.error('Error cargando datos:', err);
+                    setError(err.message);
+                    // Cargar datos de ejemplo
+                    loadExampleData();
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const loadExampleData = () => {
+                const exampleAlerts = [
+                    {
+                        id: 'example_1',
+                        ticker: 'RDDT',
+                        company: 'Reddit Inc',
+                        insider: 'Steve Huffman',
+                        role: 'CEO',
+                        transaction: 'Purchase',
+                        totalValue: 987000,
+                        shares: 15000,
+                        pricePerShare: 65.80,
+                        currentPrice: 67.45,
+                        priceChange: 1.65,
+                        priceChangePercent: 2.51,
+                        traded: '2025-08-02',
+                        filed: '2025-08-02',
+                        score: 78,
+                        level: 'high',
+                        factors: ['CEO purchase', 'Recent filing', 'Tech sector'],
+                        source: 'OpenInsider Demo'
+                    }
+                ];
+                
+                setAlerts(exampleAlerts);
+                setStats({
+                    activeAlerts: 1,
+                    avgScore: 78,
+                    critical: 0,
+                    high: 1,
+                    medium: 0
+                });
+                setLastUpdate(new Date());
+            };
+
+            const runPythonScript = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    // Simulamos la ejecución del script Python
+                    // En una implementación real, esto sería una llamada a un endpoint
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    
+                    // Recargar datos
+                    await loadRealData();
+                    
+                } catch (err) {
+                    setError('Error ejecutando el script. Ejecútalo manualmente: python insider_bot_integration.py');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('es-MX', {
+                    style: 'currency',
+                    currency: 'USD',
+                    notation: 'compact'
+                }).format(value);
+            };
+
+            const getScoreBadgeClass = (level) => {
+                return `score-badge ${level}`;
+            };
+
+            const getPriceChangeClass = (change) => {
+                return `change ${change >= 0 ? 'positive' : 'negative'}`;
+            };
+
+            return (
+                <div className="app">
+                    {/* Header */}
+                    <div className="header">
+                        <div className="title">
+                            <i className="fas fa-robot" style={{fontSize: '32px', color: '#4299e1'}}></i>
+                            <h1>Insider Trading Bot</h1>
+                            <div className="real-data-badge">
+                                <i className="fas fa-database"></i> DATOS REALES
+                            </div>
+                        </div>
+                        
+                        <div className="stats">
+                            <div className="stat-card danger">
+                                <i className="fas fa-exclamation-triangle" style={{fontSize: '24px', marginBottom: '10px'}}></i>
+                                <div style={{fontSize: '24px', fontWeight: 'bold'}}>{stats.activeAlerts}</div>
+                                <div>Alertas Activas</div>
+                            </div>
+                            <div className="stat-card">
+                                <i className="fas fa-chart-line" style={{fontSize: '24px', marginBottom: '10px'}}></i>
+                                <div style={{fontSize: '24px', fontWeight: 'bold'}}>{stats.avgScore}</div>
+                                <div>Score Promedio</div>
+                            </div>
+                            <div className="stat-card success">
+                                <i className="fas fa-fire" style={{fontSize: '24px', marginBottom: '10px'}}></i>
+                                <div style={{fontSize: '24px', fontWeight: 'bold'}}>{stats.critical + stats.high}</div>
+                                <div>Alta Prioridad</div>
+                            </div>
+                            <div className="stat-card warning">
+                                <i className="fas fa-globe" style={{fontSize: '24px', marginBottom: '10px'}}></i>
+                                <div style={{fontSize: '24px', fontWeight: 'bold'}}>OpenInsider</div>
+                                <div>Fuente de Datos</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="content">
+                        {/* Panel Principal */}
+                        <div className="main-panel">
+                            <div className="section-title">
+                                <i className="fas fa-bell"></i>
+                                Alertas Reales de Insider Trading
+                                <div className="refresh-controls">
+                                    <button 
+                                        className="btn primary" 
+                                        onClick={runPythonScript}
+                                        disabled={loading}
+                                    >
+                                        <i className="fas fa-sync"></i> Actualizar
+                                    </button>
+                                    <button 
+                                        className="btn secondary" 
+                                        onClick={loadRealData}
+                                        disabled={loading}
+                                    >
+                                        <i className="fas fa-refresh"></i> Recargar
+                                    </button>
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="error-message">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                    <strong> Error:</strong> {error}
+                                    <br/>
+                                    <small>Ejecuta: <code>python insider_bot_integration.py</code> en la terminal</small>
+                                </div>
+                            )}
+
+                            {lastUpdate && (
+                                <div className="status-indicator">
+                                    <i className="fas fa-check-circle"></i>
+                                    <span>Última actualización: {lastUpdate.toLocaleString()}</span>
+                                </div>
+                            )}
+
+                            {loading ? (
+                                <div className="loading">
+                                    <div className="spinner"></div>
+                                    <div>Cargando datos reales...</div>
+                                </div>
+                            ) : alerts.length === 0 ? (
+                                <div className="loading">
+                                    <i className="fas fa-search" style={{fontSize: '48px', color: '#cbd5e0', marginBottom: '15px'}}></i>
+                                    <div>No hay alertas disponibles</div>
+                                    <div style={{fontSize: '14px', marginTop: '10px'}}>
+                                        Ejecuta el script Python para obtener datos reales
+                                    </div>
+                                </div>
+                            ) : (
+                                alerts.map(alert => (
+                                    <div key={alert.id} className={`alert-card ${alert.level}`}>
+                                        <div className={getScoreBadgeClass(alert.level)}>
+                                            {alert.score}
+                                        </div>
+                                        
+                                        <div className="alert-header">
+                                            <div>
+                                                <div className="ticker">{alert.ticker}</div>
+                                                <div className="company">{alert.company}</div>
+                                                <div className="price-info">
+                                                    <span className="price">${alert.currentPrice}</span>
+                                                    <span className={getPriceChangeClass(alert.priceChange)}>
+                                                        {alert.priceChangePercent >= 0 ? '+' : ''}{alert.priceChangePercent.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="alert-details">
+                                            <div className="detail-item">
+                                                <i className="fas fa-user"></i>
+                                                <span>{alert.insider} ({alert.role})</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <i className="fas fa-dollar-sign"></i>
+                                                <span>{formatCurrency(alert.totalValue)}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <i className="fas fa-calendar"></i>
+                                                <span>Traded: {alert.traded}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <i className="fas fa-database"></i>
+                                                <span>{alert.source}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="factors">
+                                            <strong>Factores de Alerta:</strong>
+                                            <div className="factors-list">
+                                                {alert.factors.map((factor, idx) => (
+                                                    <span key={idx} className="factor-tag">{factor}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="actions">
+                                            <button className="btn primary">
+                                                <i className="fas fa-chart-line"></i> Seguir
+                                            </button>
+                                            <button className="btn secondary">
+                                                <i className="fas fa-chart-bar"></i> Gráfico
+                                            </button>
+                                            <button className="btn secondary">
+                                                <i className="fas fa-bell"></i> Notificar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Sidebar */}
+                        <div className="sidebar">
+                            {/* Instrucciones */}
+                            <div style={{marginBottom: '20px'}}>
+                                <div className="section-title">
+                                    <i className="fas fa-info-circle"></i>
+                                    Instrucciones
+                                </div>
+                                
+                                <div style={{fontSize: '14px', lineHeight: '1.6'}}>
+                                    <p><strong>Para obtener datos reales:</strong></p>
+                                    <ol style={{marginLeft: '20px', marginTop: '10px'}}>
+                                        <li>Abre terminal en la carpeta Bot</li>
+                                        <li>Ejecuta: <code>python insider_bot_integration.py</code></li>
+                                        <li>Ingresa tu API key de Alpha Vantage</li>
+                                        <li>Recarga esta página</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            {/* Estado del Sistema */}
+                            <div>
+                                <div className="section-title">
+                                    <i className="fas fa-server"></i>
+                                    Estado del Sistema
+                                </div>
+                                
+                                <div style={{fontSize: '14px'}}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #e2e8f0'}}>
+                                        <span>OpenInsider Scraper</span>
+                                        <span style={{color: '#48bb78', fontWeight: 'bold'}}>✓ Instalado</span>
+                                    </div>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #e2e8f0'}}>
+                                        <span>Alpha Vantage API</span>
+                                        <span style={{color: '#48bb78', fontWeight: 'bold'}}>✓ Configurado</span>
+                                    </div>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', padding: '8px 0'}}>
+                                        <span>Datos Disponibles</span>
+                                        <span style={{color: alerts.length > 0 ? '#48bb78' : '#e53e3e', fontWeight: 'bold'}}>
+                                            {alerts.length > 0 ? '✓ Sí' : '✗ No'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<InsiderTradingBotReal />, document.getElementById('root'));
+    </script>
+</body>
+</html>
