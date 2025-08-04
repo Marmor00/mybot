@@ -41,10 +41,16 @@ class InsiderBotFinnhub:
 
                 # Verificación del archivo CSV generado
                 csv_check_path = self.scraper_dir / "data" / "insider_trades.csv"
-                print("Ruta esperada:", csv_check_path)
-                print("¿Existe insider_trades.csv?:", csv_check_path.exists())
-
-                return True if csv_check_path.exists() else False
+                print(f"Verificando archivo CSV en: {csv_check_path}")
+                csv_exists = csv_check_path.exists()
+                print(f"¿Existe insider_trades.csv?: {csv_exists}")
+                
+                if csv_exists:
+                    print(f"SUCCESS: Archivo CSV encontrado con {csv_check_path.stat().st_size} bytes")
+                    return True
+                else:
+                    print("ERROR: Archivo CSV no encontrado - scraper falló")
+                    return False
             else:
                 print(f"ERROR en scraper:\n{result.stderr}")
                 return False

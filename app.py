@@ -72,31 +72,31 @@ class InsiderBotAPI:
                 self.status = "running"
                 self.log_messages = []  # Clear previous logs
                 
-                self.add_log("🚀 Iniciando sistema completo...")
+                self.add_log("Iniciando sistema completo...")
                 
                 # Import and run your extractor
                 try:
                     # Try to import your extractor
                     from extractor import InsiderBotFinnhub
                     
-                    self.add_log("🔍 Ejecutando scraper OpenInsider...")
+                    self.add_log("Ejecutando scraper OpenInsider...")
                     bot = InsiderBotFinnhub()
                     
-                    self.add_log("📊 Generando alertas con scoring...")
+                    self.add_log("Generando alertas con scoring...")
                     alerts = bot.run_full_process()
                     
                     if alerts:
-                        self.add_log(f"✅ Proceso completado - {len(alerts)} alertas generadas")
-                        self.add_log(f"💰 Valor total: ${sum(a['totalValue'] for a in alerts):,.0f}")
+                        self.add_log(f"SUCCESS: Proceso completado - {len(alerts)} alertas generadas")
+                        self.add_log(f"Valor total: ${sum(a['totalValue'] for a in alerts):,.0f}")
                         self.status = "completed"
                     else:
-                        self.add_log("⚠️ No se generaron alertas")
+                        self.add_log("WARNING: No se generaron alertas")
                         self.status = "no_data"
                     
                     self.last_run = datetime.now()
                     
                 except ImportError as e:
-                    self.add_log(f"❌ Error importando extractor: {e}")
+                    self.add_log(f"ERROR importando extractor: {e}")
                     self.add_log("💡 Simulando proceso para demo...")
                     
                     # Simulate the process for demo
