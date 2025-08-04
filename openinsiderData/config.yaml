@@ -1,6 +1,6 @@
 # Basic Settings
 output:
-  directory: "openinsiderData/data"
+  directory: "data"
   filename: "insider_trades.csv"
   format: "csv"
 
