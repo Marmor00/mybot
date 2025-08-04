@@ -35,9 +35,16 @@ class InsiderBotFinnhub:
                 sys.executable, str(scraper_path)
             ], capture_output=True, text=True, timeout=300)
 
+            print(result.stdout)  # Muestra logs del scraper
             if result.returncode == 0:
                 print("SUCCESS: Scraper ejecutado exitosamente")
-                return True
+
+                # Verificación del archivo CSV generado
+                csv_check_path = self.scraper_dir / "data" / "insider_trades.csv"
+                print("Ruta esperada:", csv_check_path)
+                print("¿Existe insider_trades.csv?:", csv_check_path.exists())
+
+                return True if csv_check_path.exists() else False
             else:
                 print(f"ERROR en scraper:\n{result.stderr}")
                 return False
@@ -48,6 +55,7 @@ class InsiderBotFinnhub:
         except Exception as e:
             print(f"ERROR ejecutando scraper: {e}")
             return False
+
 
     
     def process_scraped_data(self):
@@ -386,3 +394,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
