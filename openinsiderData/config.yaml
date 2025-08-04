@@ -1,34 +1,34 @@
 # Basic Settings
 output:
-  directory: "data"
+  directory: "openinsiderData/data"
   filename: "insider_trades.csv"
-  format: "csv"  # Possible values: csv, parquet
+  format: "csv"
 
 # Scraping Settings
 scraping:
-  start_year: 2025  # From which year should data be retrieved
-  start_month: 1    # From which month in start_year
-  max_workers: 10   # Number of parallel downloads
-  retry_attempts: 3 # Number of retry attempts on errors
-  timeout: 30       # Timeout in seconds for HTTP requests
+  start_year: 2025
+  start_month: 1
+  max_workers: 10
+  retry_attempts: 3
+  timeout: 30
 
 # Filter Settings
 filters:
-  min_transaction_value: 0     # Minimum transaction value in USD
-  transaction_types: []        # Empty = all types, or list: ["P", "S", "A", etc.]
-  exclude_companies: []        # List of ticker symbols to exclude
-  include_companies: []        # List of ticker symbols to include
-  min_shares_traded: 0        # Minimum number of traded shares
+  min_transaction_value: 0
+  transaction_types: []
+  exclude_companies: []
+  include_companies: []
+  min_shares_traded: 0
 
 # Logging Settings
 logging:
-  level: "INFO"               # DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
   file: "openinsider.log"
-  rotate_logs: true          # Archive old logs
-  max_log_size: 10           # Maximum log size in MB
+  rotate_logs: true
+  max_log_size: 10
 
 # Cache Settings
 cache:
-  enabled: true              # Enable/disable cache
-  directory: ".cache"        # Cache directory
-  max_age: 24               # Maximum age of cache files in hours
+  enabled: true
+  directory: ".cache"
+  max_age: 24
