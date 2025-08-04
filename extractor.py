@@ -24,29 +24,31 @@ class InsiderBotFinnhub:
     def run_existing_scraper(self):
         """Ejecuta tu scraper OpenInsider existente"""
         print("Ejecutando tu scraper OpenInsider...")
-        
-        original_dir = os.getcwd()
+
+        scraper_path = self.scraper_dir / "openinsider_scraper.py"
+        if not scraper_path.exists():
+            print(f"ERROR: No se encontró el archivo {scraper_path}")
+            return False
+
         try:
-            os.chdir(self.scraper_dir)
             result = subprocess.run([
-                sys.executable, "openinsider_scraper.py"
+                sys.executable, str(scraper_path)
             ], capture_output=True, text=True, timeout=300)
-            
+
             if result.returncode == 0:
                 print("SUCCESS: Scraper ejecutado exitosamente")
                 return True
             else:
-                print(f"ERROR en scraper: {result.stderr}")
+                print(f"ERROR en scraper:\n{result.stderr}")
                 return False
-                
+
         except subprocess.TimeoutExpired:
             print("TIMEOUT del scraper")
             return False
         except Exception as e:
             print(f"ERROR ejecutando scraper: {e}")
             return False
-        finally:
-            os.chdir(original_dir)
+
     
     def process_scraped_data(self):
         """Procesa datos de tu scraper existente"""
