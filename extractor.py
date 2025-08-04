@@ -107,7 +107,7 @@ class InsiderBotFinnhub:
             score = self.calculate_enhanced_score(row, total_value)
             
             alert = {
-                'id': f"insider_{hash(f'{row.get("ticker")}_{row.get("trade_date")}_{row.get("owner_name")}')}",
+                'id': f"insider_{hash(f'{row.get('ticker')}_{row.get('trade_date')}_{row.get('owner_name')}')}",
                 'ticker': str(row.get('ticker', '')).upper(),
                 'company': str(row.get('company_name', '')),
                 'insider': str(row.get('owner_name', '')),
