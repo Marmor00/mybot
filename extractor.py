@@ -106,8 +106,14 @@ class InsiderBotFinnhub:
             
             score = self.calculate_enhanced_score(row, total_value)
             
+            # Crear ID único
+            ticker = row.get('ticker', '')
+            trade_date = row.get('trade_date', '')
+            owner_name = row.get('owner_name', '')
+            alert_id = f"insider_{hash(f'{ticker}_{trade_date}_{owner_name}')}"
+            
             alert = {
-                'id': f'insider_{hash(f'{row.get('ticker')}_{row.get('trade_date')}_{row.get('owner_name')}')}',
+                'id': alert_id,
                 'ticker': str(row.get('ticker', '')).upper(),
                 'company': str(row.get('company_name', '')),
                 'insider': str(row.get('owner_name', '')),
@@ -210,31 +216,31 @@ class InsiderBotFinnhub:
         
         # Valor específico
         if total_value >= 100000000:
-            factors.append(f'🚨 MEGA (${total_value/1000000:.0f}M)')
+            factors.append(f'MEGA (${total_value/1000000:.0f}M)')
         elif total_value >= 10000000:
-            factors.append(f'💰 MAJOR (${total_value/1000000:.0f}M)')
+            factors.append(f'MAJOR (${total_value/1000000:.0f}M)')
         elif total_value >= 1000000:
-            factors.append(f'📈 Large (${total_value/1000000:.1f}M)')
+            factors.append(f'Large (${total_value/1000000:.1f}M)')
         
         # Rol específico
         title = str(row.get('Title', '')).lower()
         insider_name = str(row.get('owner_name', '')).lower()
         
         if 'moskovitz' in insider_name:
-            factors.append('👑 FOUNDER (Asana)')
+            factors.append('FOUNDER (Asana)')
         elif 'ceo' in title:
-            factors.append('👑 CEO')
+            factors.append('CEO')
         elif 'cfo' in title:
-            factors.append('💰 CFO')
+            factors.append('CFO')
         elif '10%' in title:
-            factors.append('📊 MAJOR OWNER')
+            factors.append('MAJOR OWNER')
         elif 'director' in title:
-            factors.append('👥 DIRECTOR')
+            factors.append('DIRECTOR')
         
         # Ticker
         ticker = str(row.get('ticker', '')).upper()
         if ticker in ['UPS', 'CHTR', 'ASAN']:
-            factors.append(f'🏢 {ticker}')
+            factors.append(f'{ticker}')
         
         factors.append('Recent')
         return factors
