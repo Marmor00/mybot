@@ -21,6 +21,12 @@ class InsiderBotFinnhub:
         self.data_dir = self.base_dir / "data"
         self.data_dir.mkdir(exist_ok=True)
         
+        # Debug info (commented out for performance)
+        # print(f"DEBUG - __file__: {__file__}")
+        # print(f"DEBUG - base_dir: {self.base_dir}")
+        # print(f"DEBUG - scraper_dir: {self.scraper_dir}")
+        # print(f"DEBUG - Working directory: {os.getcwd()}")
+        
     def run_existing_scraper(self):
         """Ejecuta tu scraper OpenInsider existente"""
         print("Ejecutando tu scraper OpenInsider...")
@@ -39,17 +45,30 @@ class InsiderBotFinnhub:
             if result.returncode == 0:
                 print("SUCCESS: Scraper ejecutado exitosamente")
 
-                # Verificación del archivo CSV generado
-                csv_check_path = self.scraper_dir / "data" / "insider_trades.csv"
-                print(f"Verificando archivo CSV en: {csv_check_path}")
-                csv_exists = csv_check_path.exists()
-                print(f"¿Existe insider_trades.csv?: {csv_exists}")
+                # Verificación del archivo CSV generado - múltiples ubicaciones
+                possible_paths = [
+                    self.scraper_dir / "data" / "insider_trades.csv",
+                    Path("data") / "insider_trades.csv",  # Relativo al directorio de ejecución
+                    Path.cwd() / "data" / "insider_trades.csv",  # Relativo al CWD
+                ]
                 
-                if csv_exists:
-                    print(f"SUCCESS: Archivo CSV encontrado con {csv_check_path.stat().st_size} bytes")
+                csv_found = False
+                csv_path = None
+                
+                for path in possible_paths:
+                    print(f"Verificando: {path}")
+                    if path.exists():
+                        print(f"SUCCESS: Archivo encontrado en {path} ({path.stat().st_size} bytes)")
+                        csv_found = True
+                        csv_path = path
+                        break
+                    else:
+                        print(f"No encontrado en: {path}")
+                
+                if csv_found:
                     return True
                 else:
-                    print("ERROR: Archivo CSV no encontrado - scraper falló")
+                    print("ERROR: Archivo CSV no encontrado en ninguna ubicación")
                     return False
             else:
                 print(f"ERROR en scraper:\n{result.stderr}")
@@ -66,10 +85,22 @@ class InsiderBotFinnhub:
     
     def process_scraped_data(self):
         """Procesa datos de tu scraper existente"""
-        csv_path = self.scraper_dir / "data" / "insider_trades.csv"
+        # Buscar archivo CSV en múltiples ubicaciones
+        possible_paths = [
+            self.scraper_dir / "data" / "insider_trades.csv",
+            Path("data") / "insider_trades.csv",
+            Path.cwd() / "data" / "insider_trades.csv",
+        ]
         
-        if not csv_path.exists():
-            print("ERROR: No se encontró archivo de datos del scraper")
+        csv_path = None
+        for path in possible_paths:
+            if path.exists():
+                csv_path = path
+                print(f"Procesando datos desde: {csv_path}")
+                break
+        
+        if not csv_path:
+            print("ERROR: No se encontró archivo de datos del scraper en ninguna ubicación")
             return []
         
         print("Procesando datos del scraper...")
