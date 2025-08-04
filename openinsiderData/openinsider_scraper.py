@@ -244,6 +244,8 @@ class OpenInsiderScraper:
         
         df = pd.DataFrame(data, columns=field_names)
         output_path = Path(self.config.output_dir) / self.config.output_file
+        print("📁 Guardando CSV en:", output_path.resolve())
+
         
         if self.config.output_format.lower() == 'csv':
             df.to_csv(output_path, index=False)
