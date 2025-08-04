@@ -45,11 +45,11 @@ class InsiderBotFinnhub:
             if result.returncode == 0:
                 print("SUCCESS: Scraper ejecutado exitosamente")
 
-                # Verificación del archivo CSV generado - múltiples ubicaciones
+                # Verificación del archivo CSV generado - priorizar archivo correcto
                 possible_paths = [
-                    self.scraper_dir / "data" / "insider_trades.csv",
-                    Path("data") / "insider_trades.csv",  # Relativo al directorio de ejecución
-                    Path.cwd() / "data" / "insider_trades.csv",  # Relativo al CWD
+                    self.scraper_dir / "data" / "insider_trades.csv",  # Archivo original del scraper
+                    Path.cwd() / "openinsiderData" / "data" / "insider_trades.csv",  # Ruta completa
+                    Path("data") / "insider_trades.csv",  # Último recurso
                 ]
                 
                 csv_found = False
@@ -85,11 +85,11 @@ class InsiderBotFinnhub:
     
     def process_scraped_data(self):
         """Procesa datos de tu scraper existente"""
-        # Buscar archivo CSV en múltiples ubicaciones
+        # Buscar archivo CSV - priorizar el archivo del scraper original
         possible_paths = [
-            self.scraper_dir / "data" / "insider_trades.csv",
-            Path("data") / "insider_trades.csv",
-            Path.cwd() / "data" / "insider_trades.csv",
+            self.scraper_dir / "data" / "insider_trades.csv",  # Prioridad 1: archivo original del scraper
+            Path.cwd() / "openinsiderData" / "data" / "insider_trades.csv",  # Prioridad 2: ruta completa
+            Path("data") / "insider_trades.csv",  # Último recurso: archivo local
         ]
         
         csv_path = None
@@ -106,8 +106,14 @@ class InsiderBotFinnhub:
         print("Procesando datos del scraper...")
         
         try:
-            df = pd.read_csv(csv_path)
+            # Leer CSV con manejo de errores en parsing
+            df = pd.read_csv(csv_path, on_bad_lines='skip')
             print(f"Encontradas {len(df)} transacciones")
+            
+            # Verificar si las columnas están desplazadas (detectar "M" extra)
+            if df.iloc[0]['transaction_date'] == 'M':
+                print("Detectado problema de parsing - eliminando primera fila corrupta")
+                df = df.drop(df.index[0]).reset_index(drop=True)
             
             # Validación de columnas críticas
             if 'Qty' not in df.columns or 'last_price' not in df.columns:
