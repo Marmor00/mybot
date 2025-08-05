@@ -1,196 +1,175 @@
 #!/usr/bin/env python3
 """
-Flask Backend para Insider Trading Bot
-Deploy ready para Railway/Heroku/Render
+INSIDER TRADING RESEARCH APP
+Integra scraper + research assistant en una app web
 """
-
-import os
-import json
+from flask import Flask, render_template, jsonify, request, send_file
+import pandas as pd
 import subprocess
 import sys
+import json
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, render_template, jsonify, request, send_from_directory
-from flask_cors import CORS
 import threading
 import time
-import logging
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
 
-# Configuration
-BASE_DIR = Path(__file__).parent
-DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(exist_ok=True)
-
-class InsiderBotAPI:
+class InsiderTradingApp:
     def __init__(self):
-        self.is_running = False
-        self.last_run = None
-        self.status = "idle"
-        self.log_messages = []
+        self.data_dir = Path("data")
+        self.data_dir.mkdir(exist_ok=True)
         
-    def add_log(self, message):
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        log_entry = f"[{timestamp}] {message}"
-        self.log_messages.append(log_entry)
-        if len(self.log_messages) > 50:  # Keep only last 50 messages
-            self.log_messages = self.log_messages[-50:]
-        logger.info(message)
+        # Estados del sistema
+        self.is_scraping = False
+        self.last_scrape_time = None
+        self.scrape_progress = ""
+        
+        # Archivos de datos
+        self.opportunities_file = self.data_dir / "insider_opportunities.csv"
+        self.research_file = self.data_dir / "weekly_research_report.json"
+        
+    def get_system_status(self):
+        """Estado actual del sistema"""
+        return {
+            'is_scraping': self.is_scraping,
+            'last_scrape': self.last_scrape_time,
+            'has_opportunities': self.opportunities_file.exists(),
+            'has_research': self.research_file.exists(),
+            'progress': self.scrape_progress
+        }
     
-    def get_alerts_data(self):
-        """Load current alerts data"""
-        alerts_file = DATA_DIR / "insider_alerts.json"
-        if not alerts_file.exists():
-            return {
-                'alerts': [],
-                'last_update': None,
-                'total_alerts': 0,
-                'stats': {
-                    'critical': 0, 'high': 0, 'medium': 0, 'low': 0,
-                    'avg_score': 0, 'total_value': 0, 'mega_trades': 0
-                }
-            }
+    def run_full_pipeline(self):
+        """Ejecuta scraper + research assistant completo"""
+        self.is_scraping = True
+        self.scrape_progress = "Iniciando scraping..."
         
         try:
-            with open(alerts_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            # Paso 1: Ejecutar scraper
+            self.scrape_progress = "Ejecutando scraper inteligente..."
+            result1 = subprocess.run([
+                sys.executable, "scraper.py"
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result1.returncode != 0:
+                raise Exception(f"Error en scraper: {result1.stderr}")
+            
+            # Paso 2: Ejecutar research assistant
+            self.scrape_progress = "Enriqueciendo con datos de mercado..."
+            result2 = subprocess.run([
+                sys.executable, "asistente.py"
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result2.returncode != 0:
+                raise Exception(f"Error en research assistant: {result2.stderr}")
+            
+            self.last_scrape_time = datetime.now().isoformat()
+            self.scrape_progress = "Completado exitosamente"
+            
+            return True, "Pipeline ejecutado exitosamente"
+            
         except Exception as e:
-            logger.error(f"Error loading alerts: {e}")
-            return {'alerts': [], 'error': str(e)}
+            self.scrape_progress = f"Error: {str(e)}"
+            return False, str(e)
+        finally:
+            self.is_scraping = False
     
-    def run_extractor_async(self):
-        """Run extractor in background thread"""
-        def extractor_worker():
-            try:
-                self.is_running = True
-                self.status = "running"
-                self.log_messages = []  # Clear previous logs
-                
-                self.add_log("Iniciando sistema completo...")
-                
-                # Import and run your extractor
-                try:
-                    # Try to import your extractor
-                    from extractor import InsiderBotFinnhub
-                    
-                    self.add_log("Ejecutando scraper OpenInsider...")
-                    bot = InsiderBotFinnhub()
-                    
-                    self.add_log("Generando alertas con scoring...")
-                    alerts = bot.run_full_process()
-                    
-                    if alerts:
-                        self.add_log(f"SUCCESS: Proceso completado - {len(alerts)} alertas generadas")
-                        self.add_log(f"Valor total: ${sum(a['totalValue'] for a in alerts):,.0f}")
-                        self.status = "completed"
-                    else:
-                        self.add_log("WARNING: No se generaron alertas")
-                        self.status = "no_data"
-                    
-                    self.last_run = datetime.now()
-                    
-                except ImportError as e:
-                    self.add_log(f"ERROR importando extractor: {e}")
-                    self.add_log("💡 Simulando proceso para demo...")
-                    
-                    # Simulate the process for demo
-                    time.sleep(2)
-                    self.add_log("🔍 Scraper ejecutado - 5,869 transacciones")
-                    time.sleep(1)
-                    self.add_log("📊 158 alertas generadas")
-                    time.sleep(1)
-                    self.add_log("💰 Actualizando precios...")
-                    time.sleep(2)
-                    self.add_log("✅ Proceso simulado completado")
-                    self.status = "demo_completed"
-                    
-            except Exception as e:
-                self.add_log(f"❌ Error: {str(e)}")
-                self.status = "error"
-            finally:
-                self.is_running = False
+    def get_opportunities(self):
+        """Obtiene oportunidades del scraper"""
+        if not self.opportunities_file.exists():
+            return []
         
-        thread = threading.Thread(target=extractor_worker)
-        thread.daemon = True
-        thread.start()
+        df = pd.read_csv(self.opportunities_file)
+        return df.to_dict('records')
+    
+    def get_research_data(self):
+        """Obtiene datos de research enriquecidos"""
+        if not self.research_file.exists():
+            return None
+        
+        with open(self.research_file, 'r') as f:
+            return json.load(f)
 
-# Global bot instance
-bot_api = InsiderBotAPI()
+# Instancia global
+insider_app = InsiderTradingApp()
 
 @app.route('/')
-def index():
-    """Main dashboard"""
+def dashboard():
+    """Dashboard principal"""
     return render_template('dashboard.html')
 
 @app.route('/api/status')
 def api_status():
-    """Get current system status"""
-    return jsonify({
-        'is_running': bot_api.is_running,
-        'status': bot_api.status,
-        'last_run': bot_api.last_run.isoformat() if bot_api.last_run else None,
-        'log_messages': bot_api.log_messages[-10:],  # Last 10 messages
-        'system_health': 'healthy'
-    })
+    """API: Estado del sistema"""
+    return jsonify(insider_app.get_system_status())
 
-@app.route('/api/alerts')
-def api_alerts():
-    """Get current alerts"""
-    return jsonify(bot_api.get_alerts_data())
-
-@app.route('/api/run', methods=['POST'])
-def api_run():
-    """Trigger extractor run"""
-    if bot_api.is_running:
-        return jsonify({'error': 'Extractor ya está ejecutándose'}), 400
+@app.route('/api/run-pipeline', methods=['POST'])
+def api_run_pipeline():
+    """API: Ejecutar pipeline completo"""
+    if insider_app.is_scraping:
+        return jsonify({'success': False, 'message': 'Ya hay un proceso ejecutándose'})
     
-    bot_api.run_extractor_async()
-    return jsonify({'message': 'Extractor iniciado', 'status': 'started'})
+    # Ejecutar en thread separado para no bloquear
+    def run_async():
+        insider_app.run_full_pipeline()
+    
+    thread = threading.Thread(target=run_async)
+    thread.start()
+    
+    return jsonify({'success': True, 'message': 'Pipeline iniciado'})
 
-@app.route('/api/logs')
-def api_logs():
-    """Get full logs"""
-    return jsonify({
-        'logs': bot_api.log_messages,
-        'timestamp': datetime.now().isoformat()
-    })
+@app.route('/api/opportunities')
+def api_opportunities():
+    """API: Lista de oportunidades básicas"""
+    opportunities = insider_app.get_opportunities()
+    return jsonify(opportunities)
+
+@app.route('/api/research-data')
+def api_research_data():
+    """API: Datos de research completos"""
+    research_data = insider_app.get_research_data()
+    return jsonify(research_data)
+
+@app.route('/api/research-targets')
+def api_research_targets():
+    """API: Top targets para research manual"""
+    research_data = insider_app.get_research_data()
+    
+    if not research_data:
+        return jsonify([])
+    
+    # Solo top targets con datos de mercado
+    targets = research_data.get('top_research_targets', [])[:10]
+    
+    # Filtrar solo los que tienen precio actual
+    targets_with_data = [
+        target for target in targets 
+        if target.get('current_price') is not None
+    ]
+    
+    return jsonify(targets_with_data)
+
+@app.route('/download/opportunities')
+def download_opportunities():
+    """Descarga CSV de oportunidades"""
+    if insider_app.opportunities_file.exists():
+        return send_file(insider_app.opportunities_file, as_attachment=True)
+    return "No hay datos disponibles", 404
+
+@app.route('/download/research')
+def download_research():
+    """Descarga CSV de research"""
+    research_csv = insider_app.data_dir / "weekly_research_report.csv"
+    if research_csv.exists():
+        return send_file(research_csv, as_attachment=True)
+    return "No hay datos de research disponibles", 404
 
 @app.route('/health')
-def health_check():
-    """Health check for deployment platforms"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0'
-    })
-
-# Static files (for CSS/JS if needed)
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    return send_from_directory('static', filename)
-
-# Error handlers
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Endpoint no encontrado'}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({'error': 'Error interno del servidor'}), 500
+def health():
+    """Health check para Railway"""
+    return {'status': 'ok', 'timestamp': datetime.now().isoformat()}
 
 if __name__ == '__main__':
-    # For local development
+    import os
     port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_ENV') == 'development'
-    
-    print(f"🚀 Starting Insider Trading Bot API on port {port}")
-    print(f"📱 Access from mobile: http://your-ip:{port}")
-    print(f"🌐 After deploy: https://your-app.railway.app")
-    
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    app.run(host='0.0.0.0', port=port)
